@@ -1,0 +1,219 @@
+package com.adam.thorwallpapertool
+
+import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import android.os.Bundle
+import android.provider.MediaStore
+import android.view.View
+import android.widget.*
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+
+class MainActivity : AppCompatActivity() {
+    
+    private lateinit var imagePreview: ImageView
+    private lateinit var btnSelectImage: Button
+    private lateinit var btnProcessImage: Button
+    private lateinit var selectedImageInfo: TextView
+    private lateinit var progressBar: ProgressBar
+    
+    private var selectedImageUri: Uri? = null
+    private var selectedBitmap: Bitmap? = null
+    
+    private val imagePickerLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            selectedImageUri = it
+            loadAndDisplayImage(it)
+        }
+    }
+    
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContentView(R.layout.activity_main)
+        
+        initViews()
+        setupClickListeners()
+        
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            insets
+        }
+    }
+    
+    private fun initViews() {
+        imagePreview = findViewById(R.id.imagePreview)
+        btnSelectImage = findViewById(R.id.btnSelectImage)
+        btnProcessImage = findViewById(R.id.btnProcessImage)
+        selectedImageInfo = findViewById(R.id.selectedImageInfo)
+        progressBar = findViewById(R.id.progressBar)
+    }
+    
+    private fun setupClickListeners() {
+        btnSelectImage.setOnClickListener {
+            openImagePicker()
+        }
+        
+        btnProcessImage.setOnClickListener {
+            processImage()
+        }
+    }
+    
+    private fun openImagePicker() {
+        imagePickerLauncher.launch("image/*")
+    }
+    
+    private fun loadAndDisplayImage(uri: Uri) {
+        try {
+            val inputStream = contentResolver.openInputStream(uri)
+            selectedBitmap = BitmapFactory.decodeStream(inputStream)
+            inputStream?.close()
+            
+            if (selectedBitmap != null) {
+                imagePreview.setImageBitmap(selectedBitmap)
+                btnProcessImage.isEnabled = true
+                selectedImageInfo.text = "已选择图片: ${selectedBitmap?.width}x${selectedBitmap?.height}"
+            }
+        } catch (e: Exception) {
+            Toast.makeText(this, "加载图片失败: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    private fun processImage() {
+        selectedBitmap?.let { bitmap ->
+            // 显示进度条
+            progressBar.visibility = View.VISIBLE
+            btnProcessImage.isEnabled = false
+            
+            // 在后台线程处理图片
+            Thread {
+                try {
+                    // 调用图片处理函数
+                    val result = processWallpaperImage(bitmap)
+                    
+                    runOnUiThread {
+                        // 隐藏进度条
+                        progressBar.visibility = View.GONE
+                        btnProcessImage.isEnabled = true
+                        
+                        if (result) {
+                            Toast.makeText(this, "壁纸生成成功！", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(this, "壁纸生成失败", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } catch (e: Exception) {
+                    runOnUiThread {
+                        progressBar.visibility = View.GONE
+                        btnProcessImage.isEnabled = true
+                        Toast.makeText(this, "处理图片时出错: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }.start()
+        } ?: run {
+            Toast.makeText(this, "请先选择一张图片", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    private fun processWallpaperImage(originalBitmap: Bitmap): Boolean {
+        try {
+            // 使用ImageProcessor处理图片
+            val (upperBitmap, lowerBitmap) = ImageProcessor.processWallpaper(originalBitmap)
+            
+            // 保存处理后的图片
+            saveProcessedImages(upperBitmap, lowerBitmap)
+            
+            return true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return false
+        }
+    }
+    
+    private fun saveProcessedImages(upperBitmap: Bitmap, lowerBitmap: Bitmap) {
+        try {
+            val fileNamePrefix = "thor_wallpaper_" + System.currentTimeMillis()
+            
+            // 保存上屏壁纸
+            val upperWallpaperUri = saveBitmapToGallery(upperBitmap, "${fileNamePrefix}_upper.jpg")
+            
+            // 保存下屏壁纸
+            val lowerWallpaperUri = saveBitmapToGallery(lowerBitmap, "${fileNamePrefix}_lower.jpg")
+            
+            if (upperWallpaperUri != null && lowerWallpaperUri != null) {
+                runOnUiThread {
+                    Toast.makeText(this, "壁纸已保存到相册", Toast.LENGTH_SHORT).show()
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            runOnUiThread {
+                Toast.makeText(this, "保存壁纸时出错: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+    
+    private fun saveBitmapToGallery(bitmap: Bitmap, displayName: String): Uri? {
+
+        return try {
+
+            val contentValues = android.content.ContentValues().apply {
+
+                put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, displayName)
+
+                put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+
+                put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, android.os.Environment.DIRECTORY_PICTURES + "/ThorWallpaperTool/")
+
+            }
+
+            
+
+            val contentResolver = contentResolver
+
+            val uri = contentResolver.insert(
+
+                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+
+                contentValues
+
+            )
+
+            
+
+            if (uri != null) {
+
+                val outputStream = contentResolver.openOutputStream(uri)
+
+                if (outputStream != null) {
+
+                    bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, outputStream)
+
+                    outputStream.close()
+
+                }
+
+            }
+
+            
+
+            uri
+
+        } catch (e: Exception) {
+
+            e.printStackTrace()
+
+            null
+
+        }
+
+    }
+}
