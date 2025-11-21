@@ -32,9 +32,14 @@ object ImageProcessor {
         val originalWidth = originalBitmap.width
         val originalHeight = originalBitmap.height
 
+        // 计算PPI缩放因子
+        val ppiScaleFactor = LOWER_SCREEN_PPI / UPPER_SCREEN_PPI
+
         // 计算拼接后图片的总尺寸（上下拼接：上屏在上，下屏在下，中间有间隔）
         val combinedWidth = maxOf(UPPER_SCREEN_WIDTH, LOWER_SCREEN_WIDTH)
-        val combinedHeight = UPPER_SCREEN_HEIGHT + gap + LOWER_SCREEN_HEIGHT
+        // 考虑PPI差异，对下屏区域进行缩放
+        val scaledLowerHeight = (LOWER_SCREEN_HEIGHT * ppiScaleFactor).toInt()
+        val combinedHeight = UPPER_SCREEN_HEIGHT + gap + scaledLowerHeight
 
         // 计算缩放比例，确保原始图片能够覆盖整个拼接区域
         // 保持原始图片的宽高比
@@ -58,7 +63,7 @@ object ImageProcessor {
 
         // 从拼接画布中裁切上下屏壁纸
         val upperScreenBitmap = createUpperScreenBitmap(combinedBitmap)
-        val lowerScreenBitmap = createLowerScreenBitmap(combinedBitmap, gap)
+        val lowerScreenBitmap = createLowerScreenBitmapForPPI(combinedBitmap, gap, scaledLowerHeight)
 
         return Pair(upperScreenBitmap, lowerScreenBitmap)
     }
@@ -89,13 +94,13 @@ object ImageProcessor {
      * 创建下屏（副屏）壁纸（位于拼接图的下方）
      * 考虑PPI差异，对内容进行适当调整以保持视觉一致性
      */
-    private fun createLowerScreenBitmap(bitmap: Bitmap, gap: Int): Bitmap {
+    private fun createLowerScreenBitmapForPPI(bitmap: Bitmap, gap: Int, scaledLowerHeight: Int): Bitmap {
         val bitmapWidth = bitmap.width
         val bitmapHeight = bitmap.height
 
         // 确定裁切区域 - 从指定位置开始
         val cropWidth = minOf(LOWER_SCREEN_WIDTH, bitmapWidth)
-        val cropHeight = minOf(LOWER_SCREEN_HEIGHT, bitmapHeight)
+        val cropHeight = minOf(scaledLowerHeight, bitmapHeight)
         
         // 水平居中
         val x = maxOf(0, (bitmapWidth - cropWidth) / 2)
@@ -109,13 +114,24 @@ object ImageProcessor {
             y = maxOf(0, bitmapHeight - cropHeight)
         }
 
-        return Bitmap.createBitmap(
+        val lowerBitmap = Bitmap.createBitmap(
             bitmap,
             x,
             y,
             cropWidth,
             cropHeight
         )
+        
+        // 将缩放后的下屏图片重新缩放到实际分辨率以保持PPI一致性
+        return Bitmap.createScaledBitmap(lowerBitmap, LOWER_SCREEN_WIDTH, LOWER_SCREEN_HEIGHT, true)
+    }
+    
+    /**
+     * 创建下屏（副屏）壁纸（位于拼接图的下方）
+     * 此方法保留为向后兼容
+     */
+    private fun createLowerScreenBitmap(bitmap: Bitmap, gap: Int): Bitmap {
+        return createLowerScreenBitmapForPPI(bitmap, gap, LOWER_SCREEN_HEIGHT)
     }
     
     /**
