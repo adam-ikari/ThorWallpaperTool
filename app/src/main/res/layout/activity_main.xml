@@ -34,7 +34,7 @@
                 android:layout_marginStart="24dp"
                 android:layout_marginTop="16dp"
                 android:layout_marginEnd="24dp"
-                android:text="本应用将帮助您将壁纸裁切到适合索尔双屏掌机的分辨率：\n上屏（主屏）：1920x1080\n下屏（副屏）：1240x1080"
+                android:text="本应用将帮助您将壁纸裁切到适合索尔双屏掌机的分辨率：\n上屏（主屏）：1920x1080\n下屏（副屏）：1240x1080\n\n使用说明：\n1. 生成壁纸后，上屏壁纸会自动设置为主屏壁纸\n2. 下屏壁纸会保存到相册，您可手动设置到副屏"
                 android:textAlignment="center"
                 android:textSize="14sp"
                 app:layout_constraintEnd_toEndOf="parent"
@@ -121,6 +121,19 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/editGap" />
 
+            <Button
+                android:id="@+id/btnSetWallpaper"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="24dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginEnd="24dp"
+                android:text="自动设置壁纸"
+                android:enabled="false"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/btnProcessImage" />
+
             <ProgressBar
                 android:id="@+id/progressBar"
                 android:layout_width="wrap_content"
@@ -129,7 +142,7 @@
                 android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/btnProcessImage" />
+                app:layout_constraintTop_toBottomOf="@id/btnSetWallpaper" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
