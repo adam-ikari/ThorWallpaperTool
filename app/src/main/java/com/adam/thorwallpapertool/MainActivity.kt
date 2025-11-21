@@ -20,6 +20,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnSelectImage: Button
     private lateinit var btnProcessImage: Button
     private lateinit var selectedImageInfo: TextView
+    private lateinit var editGap: EditText
     private lateinit var progressBar: ProgressBar
     
     private var selectedImageUri: Uri? = null
@@ -54,6 +55,7 @@ class MainActivity : AppCompatActivity() {
         btnSelectImage = findViewById(R.id.btnSelectImage)
         btnProcessImage = findViewById(R.id.btnProcessImage)
         selectedImageInfo = findViewById(R.id.selectedImageInfo)
+        editGap = findViewById(R.id.editGap)
         progressBar = findViewById(R.id.progressBar)
     }
     
@@ -89,6 +91,16 @@ class MainActivity : AppCompatActivity() {
     
     private fun processImage() {
         selectedBitmap?.let { bitmap ->
+            // 获取用户输入的间隔值
+            val gapInput = editGap.text.toString().trim()
+            val gap = if (gapInput.isEmpty()) 0 else {
+                try {
+                    gapInput.toInt()
+                } catch (e: NumberFormatException) {
+                    0 // 如果输入无效，默认为0
+                }
+            }
+            
             // 显示进度条
             progressBar.visibility = View.VISIBLE
             btnProcessImage.isEnabled = false
@@ -97,7 +109,7 @@ class MainActivity : AppCompatActivity() {
             Thread {
                 try {
                     // 调用图片处理函数
-                    val result = processWallpaperImage(bitmap)
+                    val result = processWallpaperImage(bitmap, gap)
                     
                     runOnUiThread {
                         // 隐藏进度条
@@ -123,10 +135,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
-    private fun processWallpaperImage(originalBitmap: Bitmap): Boolean {
+    private fun processWallpaperImage(originalBitmap: Bitmap, gap: Int = 0): Boolean {
         try {
             // 使用ImageProcessor处理图片
-            val (upperBitmap, lowerBitmap) = ImageProcessor.processWallpaper(originalBitmap)
+            val (upperBitmap, lowerBitmap) = ImageProcessor.processWallpaper(originalBitmap, gap)
             
             // 保存处理后的图片
             saveProcessedImages(upperBitmap, lowerBitmap)

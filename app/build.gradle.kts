@@ -33,6 +33,16 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+    
+    // 排除非XML资源文件以避免构建错误
+    packaging {
+        resources {
+            excludes += "/layout-land/placeholder.txt"
+            excludes += "/layout-land/placeholder.xml"
+            excludes += "/layout-land/placeholder.txt.xml"
+            excludes += "/layout-land/temp_placeholder.xml"
+        }
+    }
 }
 
 dependencies {
