@@ -121,6 +121,19 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/editGap" />
 
+            <CheckBox
+                android:id="@+id/checkPPICompensation"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="24dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="24dp"
+                android:text="启用PPI补偿 (下屏放大1.1倍)"
+                android:checked="true"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/btnProcessImage" />
+
             <ProgressBar
                 android:id="@+id/progressBar"
                 android:layout_width="wrap_content"
@@ -129,7 +142,7 @@
                 android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/btnProcessImage" />
+                app:layout_constraintTop_toBottomOf="@id/checkPPICompensation" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 

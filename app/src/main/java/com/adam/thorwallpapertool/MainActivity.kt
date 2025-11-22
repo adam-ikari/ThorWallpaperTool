@@ -21,6 +21,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnProcessImage: Button
     private lateinit var selectedImageInfo: TextView
     private lateinit var editGap: EditText
+    private lateinit var checkPPICompensation: CheckBox
     private lateinit var progressBar: ProgressBar
     
     private var selectedImageUri: Uri? = null
@@ -56,6 +57,7 @@ class MainActivity : AppCompatActivity() {
         btnProcessImage = findViewById(R.id.btnProcessImage)
         selectedImageInfo = findViewById(R.id.selectedImageInfo)
         editGap = findViewById(R.id.editGap)
+        checkPPICompensation = findViewById(R.id.checkPPICompensation)
         progressBar = findViewById(R.id.progressBar)
     }
     
@@ -75,8 +77,26 @@ class MainActivity : AppCompatActivity() {
     
     private fun loadAndDisplayImage(uri: Uri) {
         try {
+            // 获取图片尺寸以预先判断是否为高分辨率图片
+            val options = BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+            }
+            contentResolver.openInputStream(uri)?.use {
+                BitmapFactory.decodeStream(it, null, options)
+            }
+            
+            // 计算缩放比例以适应预览，避免在UI线程加载过大图片
+            val reqWidth = 800  // 预览最大宽度
+            val reqHeight = 600 // 预览最大高度
+            
+            options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight)
+            options.inJustDecodeBounds = false
+            options.inPreferredConfig = Bitmap.Config.ARGB_8888
+            options.inMutable = true
+            
+            // 加载缩略图用于预览
             val inputStream = contentResolver.openInputStream(uri)
-            selectedBitmap = BitmapFactory.decodeStream(inputStream)
+            selectedBitmap = BitmapFactory.decodeStream(inputStream, null, options)
             inputStream?.close()
             
             if (selectedBitmap != null) {
@@ -87,6 +107,26 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {
             Toast.makeText(this, "加载图片失败: ${e.message}", Toast.LENGTH_SHORT).show()
         }
+    }
+    
+    /**
+     * 计算合适的inSampleSize值，用于加载缩略图
+     */
+    private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
+        val (height: Int, width: Int) = options.run { outHeight to outWidth }
+        var inSampleSize = 1
+
+        if (height > reqHeight || width > reqWidth) {
+            val halfHeight: Int = height / 2
+            val halfWidth: Int = width / 2
+
+            // 计算最大的inSampleSize值，该值保证各边长度都大于所需尺寸
+            while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
+                inSampleSize *= 2
+            }
+        }
+
+        return inSampleSize
     }
     
     private fun processImage() {
@@ -137,11 +177,20 @@ class MainActivity : AppCompatActivity() {
     
     private fun processWallpaperImage(originalBitmap: Bitmap, gap: Int = 0): Boolean {
         try {
+            // 从UI控件获取PPI补偿设置
+            val enablePPICompensation = checkPPICompensation.isChecked
+            
             // 使用ImageProcessor处理图片
-            val (upperBitmap, lowerBitmap) = ImageProcessor.processWallpaper(originalBitmap, gap)
+            val (upperBitmap, lowerBitmap) = ImageProcessor.processWallpaper(originalBitmap, gap, enablePPICompensation)
             
             // 保存处理后的图片
             saveProcessedImages(upperBitmap, lowerBitmap)
+            
+            // 回收生成的位图以释放内存
+            if (upperBitmap != originalBitmap && lowerBitmap != originalBitmap) {
+                upperBitmap.recycle()
+                lowerBitmap.recycle()
+            }
             
             return true
         } catch (e: Exception) {
@@ -203,13 +252,9 @@ class MainActivity : AppCompatActivity() {
 
             if (uri != null) {
 
-                val outputStream = contentResolver.openOutputStream(uri)
-
-                if (outputStream != null) {
+                contentResolver.openOutputStream(uri)?.use { outputStream ->
 
                     bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, outputStream)
-
-                    outputStream.close()
 
                 }
 
@@ -227,5 +272,15 @@ class MainActivity : AppCompatActivity() {
 
         }
 
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        // 回收选中的位图以释放内存
+        selectedBitmap?.let { 
+            if (!it.isRecycled) {
+                it.recycle()
+            }
+        }
     }
 }
