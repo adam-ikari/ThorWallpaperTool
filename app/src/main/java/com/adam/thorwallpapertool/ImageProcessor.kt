@@ -8,12 +8,6 @@ import kotlin.math.min
 
 object ImageProcessor {
     
-    // 索尔掌机屏幕参数
-    const val UPPER_SCREEN_WIDTH = 1920
-    const val UPPER_SCREEN_HEIGHT = 1080
-    const val LOWER_SCREEN_WIDTH = 1240
-    const val LOWER_SCREEN_HEIGHT = 1080
-    
     /**
      * 根据索尔掌机的屏幕参数裁切壁纸
      * 保持内容比例不变，缩放图片到合适的分辨率，生成上下屏两张图片
@@ -35,10 +29,10 @@ object ImageProcessor {
         val lowerScreenScaleFactor = if (enablePPICompensation) 1.1f else 1.0f
 
         // 计算拼接后图片的总尺寸（上下拼接：上屏在上，下屏在下，中间有间隔）
-        val combinedWidth = maxOf(UPPER_SCREEN_WIDTH, (LOWER_SCREEN_WIDTH * lowerScreenScaleFactor).toInt())
+        val combinedWidth = maxOf(DeviceConfig.UPPER_SCREEN_WIDTH, (DeviceConfig.LOWER_SCREEN_WIDTH * lowerScreenScaleFactor).toInt())
         // 为保证像素完美，下屏区域应有1.1倍的额外分辨率（如果启用PPI补偿）
-        val scaledLowerHeight = (LOWER_SCREEN_HEIGHT * lowerScreenScaleFactor).toInt()
-        val combinedHeight = UPPER_SCREEN_HEIGHT + gap + scaledLowerHeight
+        val scaledLowerHeight = (DeviceConfig.LOWER_SCREEN_HEIGHT * lowerScreenScaleFactor).toInt()
+        val combinedHeight = DeviceConfig.UPPER_SCREEN_HEIGHT + gap + scaledLowerHeight
 
         // 计算缩放比例，确保原始图片能够覆盖整个拼接区域
         // 保持原始图片的宽高比
@@ -129,8 +123,8 @@ object ImageProcessor {
         val bitmapHeight = bitmap.height
         
         // 确定裁切区域 - 从顶部开始
-        val cropWidth = minOf(UPPER_SCREEN_WIDTH, bitmapWidth)
-        val cropHeight = minOf(UPPER_SCREEN_HEIGHT, bitmapHeight)
+        val cropWidth = minOf(DeviceConfig.UPPER_SCREEN_WIDTH, bitmapWidth)
+        val cropHeight = minOf(DeviceConfig.UPPER_SCREEN_HEIGHT, bitmapHeight)
         val x = maxOf(0, (bitmapWidth - cropWidth) / 2)  // 水平居中
         val y = 0  // 从顶部开始裁切
 
@@ -144,11 +138,11 @@ object ImageProcessor {
         )
         
         // 如果尺寸恰好符合要求，直接返回；否则创建新位图以确保质量
-        if (cropWidth == UPPER_SCREEN_WIDTH && cropHeight == UPPER_SCREEN_HEIGHT) {
+        if (cropWidth == DeviceConfig.UPPER_SCREEN_WIDTH && cropHeight == DeviceConfig.UPPER_SCREEN_HEIGHT) {
             return resultBitmap
         } else {
             // 创建标准尺寸的位图
-            val targetBitmap = Bitmap.createBitmap(UPPER_SCREEN_WIDTH, UPPER_SCREEN_HEIGHT, Bitmap.Config.ARGB_8888)
+            val targetBitmap = Bitmap.createBitmap(DeviceConfig.UPPER_SCREEN_WIDTH, DeviceConfig.UPPER_SCREEN_HEIGHT, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(targetBitmap)
             
             // 使用高质量渲染设置
@@ -160,7 +154,7 @@ object ImageProcessor {
             // 将裁切的内容绘制到目标画布上
             canvas.drawBitmap(resultBitmap, 
                 android.graphics.Rect(0, 0, resultBitmap.width, resultBitmap.height),  // 源矩形
-                android.graphics.Rect(0, 0, UPPER_SCREEN_WIDTH, UPPER_SCREEN_HEIGHT), // 目标矩形
+                android.graphics.Rect(0, 0, DeviceConfig.UPPER_SCREEN_WIDTH, DeviceConfig.UPPER_SCREEN_HEIGHT), // 目标矩形
                 paint)
             
             // 回收临时图片以释放内存
@@ -184,18 +178,18 @@ object ImageProcessor {
 
         // 根据是否启用PPI补偿来确定最终输出尺寸
         val lowerScreenScaleFactor = if (enablePPICompensation) 1.1f else 1.0f
-        val outputWidth = (LOWER_SCREEN_WIDTH * lowerScreenScaleFactor).toInt()
-        val outputHeight = (LOWER_SCREEN_HEIGHT * lowerScreenScaleFactor).toInt()
+        val outputWidth = (DeviceConfig.LOWER_SCREEN_WIDTH * lowerScreenScaleFactor).toInt()
+        val outputHeight = (DeviceConfig.LOWER_SCREEN_HEIGHT * lowerScreenScaleFactor).toInt()
         
         // 确定裁切区域 - 裁切中心1240x1080的内容区域
-        val cropWidth = minOf(LOWER_SCREEN_WIDTH, bitmapWidth)  // 裁切标准分辨率的内容
-        val cropHeight = minOf(LOWER_SCREEN_HEIGHT, bitmapHeight)
+        val cropWidth = minOf(DeviceConfig.LOWER_SCREEN_WIDTH, bitmapWidth)  // 裁切标准分辨率的内容
+        val cropHeight = minOf(DeviceConfig.LOWER_SCREEN_HEIGHT, bitmapHeight)
         
         // 水平居中
         val x = maxOf(0, (bitmapWidth - cropWidth) / 2)
         
         // 从上屏+间隔之后开始，但确保不超出边界
-        val startY = UPPER_SCREEN_HEIGHT + gap
+        val startY = DeviceConfig.UPPER_SCREEN_HEIGHT + gap
         var y = startY
         
         // 如果计算出的位置超出边界，则从底部对齐
@@ -223,8 +217,8 @@ object ImageProcessor {
         }
         
         // 将标准分辨率的内容放置在目标画布的中心位置
-        val centerX = (outputWidth - LOWER_SCREEN_WIDTH) / 2f
-        val centerY = (outputHeight - LOWER_SCREEN_HEIGHT) / 2f
+        val centerX = (outputWidth - DeviceConfig.LOWER_SCREEN_WIDTH) / 2f
+        val centerY = (outputHeight - DeviceConfig.LOWER_SCREEN_HEIGHT) / 2f
         
         canvas.drawBitmap(lowerBitmap, 
             centerX, 
@@ -242,7 +236,7 @@ object ImageProcessor {
      * 此方法保留为向后兼容
      */
     private fun createLowerScreenBitmap(bitmap: Bitmap, gap: Int): Bitmap {
-        return createLowerScreenBitmapForPPI(bitmap, gap, LOWER_SCREEN_HEIGHT)
+        return createLowerScreenBitmapForPPI(bitmap, gap, DeviceConfig.LOWER_SCREEN_HEIGHT)
     }
     
     /**

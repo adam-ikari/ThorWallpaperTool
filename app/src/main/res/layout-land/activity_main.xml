@@ -20,7 +20,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="索尔掌机壁纸工具"
+                android:text="@string/title"
                 android:textSize="20sp"
                 android:textStyle="bold"
                 app:layout_constraintEnd_toEndOf="parent"
@@ -34,7 +34,7 @@
                 android:layout_marginStart="16dp"
                 android:layout_marginTop="8dp"
                 android:layout_marginEnd="16dp"
-                android:text="本应用将帮助您将壁纸裁切到适合索尔双屏掌机的分辨率：\n上屏（主屏）：1920x1080\n下屏（副屏）：1240x1080"
+                android:text="@string/description"
                 android:textAlignment="center"
                 android:textSize="12sp"
                 app:layout_constraintEnd_toEndOf="parent"
@@ -57,7 +57,7 @@
                 android:layout_marginEnd="8dp"
                 android:scaleType="centerCrop"
                 android:background="#f0f0f0"
-                android:contentDescription="图片预览"
+                android:contentDescription="@string/image_preview_content_description"
                 app:layout_constraintEnd_toStartOf="@id/guideline_vertical"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/description" />
@@ -79,14 +79,14 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="8dp"
-                    android:text="选择图片" />
+                    android:text="@string/btn_select_image" />
 
                 <TextView
                     android:id="@+id/selectedImageInfo"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="8dp"
-                    android:text="未选择图片"
+                    android:text="@string/no_image_selected"
                     android:textAlignment="center"
                     android:textSize="12sp" />
 
@@ -95,7 +95,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="4dp"
-                    android:text="屏幕间隔 (像素):"
+                    android:text="@string/gap_label"
                     android:textAlignment="center"
                     android:textSize="12sp" />
 
@@ -105,7 +105,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="8dp"
                     android:inputType="number"
-                    android:hint="输入间隔像素数 (默认: 0)"
+                    android:hint="@string/gap_hint"
                     android:text="0"
                     android:textAlignment="center" />
 
@@ -114,7 +114,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="8dp"
-                    android:text="启用PPI补偿"
+                    android:text="@string/ppi_compensation_label_land"
                     android:checked="true" />
 
                 <Button
@@ -122,7 +122,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="8dp"
-                    android:text="生成壁纸"
+                    android:text="@string/btn_process_image"
                     android:enabled="false" />
 
                 <ProgressBar

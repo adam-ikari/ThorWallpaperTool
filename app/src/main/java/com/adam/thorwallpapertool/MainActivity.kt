@@ -105,7 +105,7 @@ class MainActivity : AppCompatActivity() {
                 selectedImageInfo.text = "已选择图片: ${selectedBitmap?.width}x${selectedBitmap?.height}"
             }
         } catch (e: Exception) {
-            Toast.makeText(this, "加载图片失败: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.loading_image_error) + ": ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
     
@@ -157,21 +157,21 @@ class MainActivity : AppCompatActivity() {
                         btnProcessImage.isEnabled = true
                         
                         if (result) {
-                            Toast.makeText(this, "壁纸生成成功！", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(this, "壁纸生成失败", Toast.LENGTH_SHORT).show()
-                        }
+                    Toast.makeText(this, R.string.process_success, Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, R.string.process_failed, Toast.LENGTH_SHORT).show()
+                }
                     }
                 } catch (e: Exception) {
                     runOnUiThread {
                         progressBar.visibility = View.GONE
                         btnProcessImage.isEnabled = true
-                        Toast.makeText(this, "处理图片时出错: ${e.message}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, getString(R.string.process_error) + ": ${e.message}", Toast.LENGTH_SHORT).show()
                     }
                 }
             }.start()
         } ?: run {
-            Toast.makeText(this, "请先选择一张图片", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, R.string.no_image_selected_error, Toast.LENGTH_SHORT).show()
         }
     }
     
@@ -211,67 +211,43 @@ class MainActivity : AppCompatActivity() {
             
             if (upperWallpaperUri != null && lowerWallpaperUri != null) {
                 runOnUiThread {
-                    Toast.makeText(this, "壁纸已保存到相册", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, R.string.save_success, Toast.LENGTH_SHORT).show()
                 }
             }
         } catch (e: Exception) {
             e.printStackTrace()
             runOnUiThread {
-                Toast.makeText(this, "保存壁纸时出错: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.save_error) + ": ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }
     
     private fun saveBitmapToGallery(bitmap: Bitmap, displayName: String): Uri? {
-
         return try {
-
             val contentValues = android.content.ContentValues().apply {
-
                 put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, displayName)
-
                 put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-
-                put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, android.os.Environment.DIRECTORY_PICTURES + "/ThorWallpaperTool/")
-
+                put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, 
+                    android.os.Environment.DIRECTORY_PICTURES + "/ThorWallpaperTool/")
             }
-
-            
 
             val contentResolver = contentResolver
-
             val uri = contentResolver.insert(
-
                 android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-
                 contentValues
-
             )
 
-            
-
             if (uri != null) {
-
                 contentResolver.openOutputStream(uri)?.use { outputStream ->
-
                     bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, outputStream)
-
                 }
-
             }
 
-            
-
             uri
-
         } catch (e: Exception) {
-
             e.printStackTrace()
-
             null
-
         }
-
     }
     
     override fun onDestroy() {

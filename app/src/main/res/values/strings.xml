@@ -1,3 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">ThorWallpaperTool</string>
+    <string name="app_name">索尔掌机壁纸工具</string>
+    <string name="title">索尔掌机壁纸工具</string>
+    <string name="description">本应用将帮助您将壁纸裁切到适合索尔双屏掌机的分辨率：\n上屏（主屏）：1920x1080\n下屏（副屏）：1240x1080</string>
+    <string name="image_preview_content_description">图片预览</string>
+    <string name="btn_select_image">选择图片</string>
+    <string name="no_image_selected">未选择图片</string>
+    <string name="gap_label">屏幕间隔 (像素):</string>
+    <string name="gap_hint">输入间隔像素数 (默认: 0)</string>
+    <string name="ppi_compensation_label">启用PPI补偿 (下屏放大1.1倍)</string>
+    <string name="btn_process_image">生成壁纸</string>
+    <string name="loading_image_error">加载图片失败</string>
+    <string name="process_success">壁纸生成成功！</string>
+    <string name="process_failed">壁纸生成失败</string>
+    <string name="no_image_selected_error">请先选择一张图片</string>
+    <string name="process_error">处理图片时出错</string>
+    <string name="save_success">壁纸已保存到相册</string>
+    <string name="save_error">保存壁纸时出错</string>
+    <string name="ppi_compensation_label_land">启用PPI补偿</string>
 </resources>
