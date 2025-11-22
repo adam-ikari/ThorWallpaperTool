@@ -182,10 +182,14 @@ object ImageProcessor {
         val bitmapWidth = bitmap.width
         val bitmapHeight = bitmap.height
 
-        // 根据是否启用PPI补偿来确定裁切区域
+        // 根据是否启用PPI补偿来确定最终输出尺寸
         val lowerScreenScaleFactor = if (enablePPICompensation) 1.1f else 1.0f
-        val cropWidth = minOf((LOWER_SCREEN_WIDTH * lowerScreenScaleFactor).toInt(), bitmapWidth)  // 根据PPI补偿决定是否需要额外分辨率
-        val cropHeight = minOf(scaledLowerHeight, bitmapHeight)
+        val outputWidth = (LOWER_SCREEN_WIDTH * lowerScreenScaleFactor).toInt()
+        val outputHeight = (LOWER_SCREEN_HEIGHT * lowerScreenScaleFactor).toInt()
+        
+        // 确定裁切区域 - 裁切中心1240x1080的内容区域
+        val cropWidth = minOf(LOWER_SCREEN_WIDTH, bitmapWidth)  // 裁切标准分辨率的内容
+        val cropHeight = minOf(LOWER_SCREEN_HEIGHT, bitmapHeight)
         
         // 水平居中
         val x = maxOf(0, (bitmapWidth - cropWidth) / 2)
@@ -207,8 +211,8 @@ object ImageProcessor {
             cropHeight
         )
         
-        // 创建目标尺寸的位图并用黑色填充
-        val targetBitmap = Bitmap.createBitmap(LOWER_SCREEN_WIDTH, LOWER_SCREEN_HEIGHT, Bitmap.Config.ARGB_8888)
+        // 创建目标尺寸的位图（PPI补偿后的尺寸）并用黑色填充
+        val targetBitmap = Bitmap.createBitmap(outputWidth, outputHeight, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(targetBitmap)
         canvas.drawColor(android.graphics.Color.BLACK)
         
@@ -218,11 +222,13 @@ object ImageProcessor {
             isAntiAlias = true     // 启用抗锯齿
         }
         
-        // 将高分辨率的下屏图片缩放到实际分辨率 - 这是一个下采样过程，确保像素完美
-        // 通过直接绘制到目标画布上来减少中间步骤
+        // 将标准分辨率的内容放置在目标画布的中心位置
+        val centerX = (outputWidth - LOWER_SCREEN_WIDTH) / 2f
+        val centerY = (outputHeight - LOWER_SCREEN_HEIGHT) / 2f
+        
         canvas.drawBitmap(lowerBitmap, 
-            android.graphics.Rect(0, 0, lowerBitmap.width, lowerBitmap.height),  // 源矩形
-            android.graphics.Rect(0, 0, LOWER_SCREEN_WIDTH, LOWER_SCREEN_HEIGHT), // 目标矩形
+            centerX, 
+            centerY, 
             paint)
         
         // 回收临时图片以释放内存
