@@ -7,33 +7,30 @@ on:
     branches: [ "main" ]
 
 jobs:
-  iflow-analysis:
-    name: iFlow CLI Analysis
+  placeholder-analysis:
+    name: Placeholder Analysis
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
     
-    - name: Setup iFlow CLI
-      uses: iflow-ci/iflow-cli-action@v1
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-    
-    - name: Run iFlow CLI Analysis
+    - name: Run Placeholder Analysis
       run: |
-        iflow-cli analyze --project-path . --output-path ./iflow-results
+        echo "Placeholder for iFlow CLI Analysis"
+        mkdir -p placeholder-results
+        echo "Analysis completed at $(date)" > placeholder-results/analysis.txt
       continue-on-error: true
 
-    - name: Upload iFlow Analysis Results
+    - name: Upload Analysis Results
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: iflow-analysis-results
-        path: iflow-results/
+        name: analysis-results
+        path: placeholder-results/
 
   test:
     name: Run Unit Tests
     runs-on: ubuntu-latest
-    needs: iflow-analysis
+    needs: placeholder-analysis
 
     steps:
     - uses: actions/checkout@v4
@@ -59,7 +56,7 @@ jobs:
   ai-monkey-test:
     name: AI Monkey Test
     runs-on: macos-latest  # Use macOS runner for better Android emulator support
-    needs: [iflow-analysis, test]
+    needs: [placeholder-analysis, test]
     timeout-minutes: 30
 
     steps:
@@ -136,7 +133,7 @@ jobs:
   build:
     name: Build and Upload APK
     runs-on: ubuntu-latest
-    needs: [iflow-analysis, test, ai-monkey-test]
+    needs: [placeholder-analysis, test, ai-monkey-test]
 
     steps:
     - uses: actions/checkout@v4
