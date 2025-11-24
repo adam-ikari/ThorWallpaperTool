@@ -7,30 +7,45 @@ on:
     branches: [ "main" ]
 
 jobs:
-  placeholder-analysis:
-    name: Placeholder Analysis
+  iflow-analysis:
+    name: iFlow CLI Analysis
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
     
-    - name: Run Placeholder Analysis
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install iFlow CLI
       run: |
-        echo "Placeholder for iFlow CLI Analysis"
-        mkdir -p placeholder-results
-        echo "Analysis completed at $(date)" > placeholder-results/analysis.txt
+        pip install iflow-cli || echo "iFlow CLI not available as pip package, using alternative approach"
+    
+    - name: Run iFlow Analysis
+      run: |
+        # Check if iflow-cli is available
+        if command -v iflow-cli &> /dev/null; then
+          echo "Running iFlow CLI Analysis..."
+          iflow-cli analyze --project-path . --output-path ./iflow-results
+        else
+          echo "iFlow CLI not available, creating placeholder results"
+          mkdir -p iflow-results
+          echo "iFlow analysis would run here if the tool was available" > iflow-results/analysis.txt
+        fi
       continue-on-error: true
 
-    - name: Upload Analysis Results
+    - name: Upload iFlow Analysis Results
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: analysis-results
-        path: placeholder-results/
+        name: iflow-analysis-results
+        path: iflow-results/
 
   test:
     name: Run Unit Tests
     runs-on: ubuntu-latest
-    needs: placeholder-analysis
+    needs: iflow-analysis
 
     steps:
     - uses: actions/checkout@v4
@@ -56,7 +71,7 @@ jobs:
   ai-monkey-test:
     name: AI Monkey Test
     runs-on: macos-latest  # Use macOS runner for better Android emulator support
-    needs: [placeholder-analysis, test]
+    needs: [iflow-analysis, test]
     timeout-minutes: 30
 
     steps:
@@ -133,7 +148,7 @@ jobs:
   build:
     name: Build and Upload APK
     runs-on: ubuntu-latest
-    needs: [placeholder-analysis, test, ai-monkey-test]
+    needs: [iflow-analysis, test, ai-monkey-test]
 
     steps:
     - uses: actions/checkout@v4
