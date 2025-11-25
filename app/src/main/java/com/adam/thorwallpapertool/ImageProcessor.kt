@@ -29,7 +29,6 @@ object ImageProcessor {
         // 计算上下屏的实际输出尺寸
         val upperScreenOutputWidth = DeviceConfig.UPPER_SCREEN_WIDTH
         val upperScreenOutputHeight = DeviceConfig.UPPER_SCREEN_HEIGHT
-        // 下屏输出尺寸保持原始分辨率，但内容需要根据PPI调整
         val lowerScreenOutputWidth = DeviceConfig.LOWER_SCREEN_WIDTH
         val lowerScreenOutputHeight = DeviceConfig.LOWER_SCREEN_HEIGHT
 
@@ -63,6 +62,7 @@ object ImageProcessor {
             upperCropHeight
         )
         
+        // 裁切下屏内容 - 因为需要考虑PPI，所以需要在原始图片中裁切更大的区域
         var lowerCropBitmap: Bitmap? = null
         if (safeCropTotalHeight > upperCropHeight) {
             val lowerCropStartY = cropStartY + upperCropHeight
@@ -86,34 +86,26 @@ object ImageProcessor {
             }
         }
 
-        // 将裁切出的图片缩放到目标分辨率
-        val upperScreenBitmap = if (upperCropBitmap.width == upperScreenOutputWidth && upperCropBitmap.height == upperScreenOutputHeight) {
-            upperCropBitmap
-        } else {
-            scaleBitmapToTarget(upperCropBitmap, upperScreenOutputWidth, upperScreenOutputHeight)
-        }
+        // 将裁切出的上屏图片缩放到目标分辨率
+        val upperScreenBitmap = scaleBitmapToTarget(upperCropBitmap, upperScreenOutputWidth, upperScreenOutputHeight)
         
-        // 对下屏进行PPI补偿 - 保持物理尺寸一致
-        val lowerCropBitmapForPPI = if (ppiRatio != 1.0f) {
+        // 对下屏内容应用PPI补偿 - 调整内容以确保在不同PPI屏幕上显示相同的物理尺寸
+        val lowerCropBitmapWithPPI = if (ppiRatio != 1.0f) {
             // 按PPI比例缩放下屏内容，以确保物理尺寸一致
-            val ppiAdjustedWidth = (lowerCropBitmap!!.width * ppiRatio).toInt()
-            val ppiAdjustedHeight = (lowerCropBitmap.height * ppiRatio).toInt()
+            val ppiAdjustedWidth = (lowerCropBitmap!!.width / ppiRatio).toInt()
+            val ppiAdjustedHeight = (lowerCropBitmap.height / ppiRatio).toInt()
             scaleBitmapToTarget(lowerCropBitmap, ppiAdjustedWidth, ppiAdjustedHeight)
         } else {
             lowerCropBitmap!!
         }
         
-        val lowerScreenBitmap = if (lowerCropBitmapForPPI.width == lowerScreenOutputWidth && 
-            lowerCropBitmapForPPI.height == lowerScreenOutputHeight) {
-            lowerCropBitmapForPPI
-        } else {
-            scaleBitmapToTarget(lowerCropBitmapForPPI, lowerScreenOutputWidth, lowerScreenOutputHeight)
-        }
+        // 将下屏内容缩放到输出分辨率
+        val lowerScreenBitmap = scaleBitmapToTarget(lowerCropBitmapWithPPI, lowerScreenOutputWidth, lowerScreenOutputHeight)
 
         // 回收临时图片以释放内存
         if (upperScreenBitmap != upperCropBitmap) upperCropBitmap.recycle()
-        if (lowerScreenBitmap != lowerCropBitmapForPPI && lowerCropBitmapForPPI != lowerCropBitmap!!) lowerCropBitmapForPPI.recycle()
-        if (lowerCropBitmap != lowerScreenBitmap && lowerCropBitmap != lowerCropBitmapForPPI) lowerCropBitmap.recycle()
+        if (lowerScreenBitmap != lowerCropBitmapWithPPI && lowerCropBitmapWithPPI != lowerCropBitmap!!) lowerCropBitmapWithPPI.recycle()
+        if (lowerCropBitmap != lowerScreenBitmap && lowerCropBitmap != lowerCropBitmapWithPPI) lowerCropBitmap.recycle()
 
         return Pair(upperScreenBitmap, lowerScreenBitmap)
     }
