@@ -141,60 +141,32 @@ object ImageProcessor {
     
     /**
      * 将图片缩放到目标尺寸，保持原始宽高比
+     * 使用拉伸填充方式确保目标尺寸完全填充，避免黑色区域
      */
     private fun scaleBitmapToTarget(bitmap: Bitmap, targetWidth: Int, targetHeight: Int): Bitmap {
         if (bitmap.width == targetWidth && bitmap.height == targetHeight) {
             return bitmap
         }
         
-        // 计算缩放比例，保持宽高比
-        val scaleX = targetWidth.toFloat() / bitmap.width
-        val scaleY = targetHeight.toFloat() / bitmap.height
-        val scale = minOf(scaleX, scaleY) // 使用较小的比例，确保图片完全适应目标尺寸
+        // 创建目标尺寸的位图
+        val result = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(result)
         
-        // 计算缩放后的尺寸
-        val scaledWidth = (bitmap.width * scale).toInt()
-        val scaledHeight = (bitmap.height * scale).toInt()
-        
-        // 使用Matrix进行高质量缩放
-        val matrix = Matrix()
-        matrix.postScale(scale, scale)
-        
-        val scaledBitmap = Bitmap.createBitmap(
-            bitmap,
-            0, 0,
-            bitmap.width,
-            bitmap.height,
-            matrix,
-            true
-        )
-        
-        // 创建目标尺寸的画布，确保输出尺寸始终正确
-        if (scaledWidth == targetWidth && scaledHeight == targetHeight) {
-            return scaledBitmap
-        } else {
-            // 创建目标尺寸的位图作为画布
-            val result = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
-            val canvas = android.graphics.Canvas(result)
-            canvas.drawColor(android.graphics.Color.BLACK) // 填充黑色背景
-            
-            // 计算居中绘制的位置
-            val x = (targetWidth - scaledWidth) / 2
-            val y = (targetHeight - scaledHeight) / 2
-            
-            // 在画布上绘制缩放后的图片
-            val paint = android.graphics.Paint().apply {
-                isFilterBitmap = true // 启用过滤以获得更平滑的效果
-                isAntiAlias = true    // 启用抗锯齿
-            }
-            
-            canvas.drawBitmap(scaledBitmap, x.toFloat(), y.toFloat(), paint)
-            
-            // 回收中间图片以释放内存
-            scaledBitmap.recycle()
-            
-            return result
+        // 使用Paint对象设置高质量渲染
+        val paint = android.graphics.Paint().apply {
+            isFilterBitmap = true  // 启用双线性过滤
+            isAntiAlias = true     // 启用抗锯齿
+            isDither = true        // 启用抖动
         }
+        
+        // 创建源矩形和目标矩形来定义拉伸方式
+        val srcRect = android.graphics.Rect(0, 0, bitmap.width, bitmap.height)
+        val dstRect = android.graphics.Rect(0, 0, targetWidth, targetHeight)
+        
+        // 将原始图片拉伸绘制到目标尺寸，完全填充目标区域
+        canvas.drawBitmap(bitmap, srcRect, dstRect, paint)
+        
+        return result
     }
     
     /**
