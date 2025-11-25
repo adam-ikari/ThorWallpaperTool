@@ -26,34 +26,46 @@ object ImageProcessor {
         // 下屏PPI较低，需要相应调整内容以确保物理尺寸一致
         val ppiRatio = DeviceConfig.LOWER_SCREEN_PPI / DeviceConfig.UPPER_SCREEN_PPI
         
-        // 计算上下屏的实际输出尺寸
-        val upperScreenOutputWidth = DeviceConfig.UPPER_SCREEN_WIDTH
-        val upperScreenOutputHeight = DeviceConfig.UPPER_SCREEN_HEIGHT
-        val lowerScreenOutputWidth = DeviceConfig.LOWER_SCREEN_WIDTH
-        val lowerScreenOutputHeight = DeviceConfig.LOWER_SCREEN_HEIGHT
+        // 计算输出尺寸
+        val upperScreenOutputWidth = DeviceConfig.UPPER_SCREEN_WIDTH  // 1920
+        val upperScreenOutputHeight = DeviceConfig.UPPER_SCREEN_HEIGHT  // 1080
+        val lowerScreenOutputWidth = DeviceConfig.LOWER_SCREEN_WIDTH  // 1240
+        val lowerScreenOutputHeight = DeviceConfig.LOWER_SCREEN_HEIGHT  // 1080
 
-        // 计算裁切尺寸，考虑PPI差异
-        // 为保持物理尺寸一致，下屏在原始图片中需要更大的裁切区域
-        val totalTargetHeight = DeviceConfig.UPPER_SCREEN_HEIGHT + (DeviceConfig.LOWER_SCREEN_HEIGHT / ppiRatio).toInt()
-        val cropRatio = minOf(
-            originalWidth.toFloat() / max(DeviceConfig.UPPER_SCREEN_WIDTH, DeviceConfig.LOWER_SCREEN_WIDTH),
-            originalHeight.toFloat() / totalTargetHeight
-        )
+        // 计算缩放比例，确保原始图片覆盖上下屏所需的总面积（考虑PPI差异）
+        // 为了保持物理尺寸一致，下屏在原始图片中需要的像素数应为：实际像素 / PPI比率
+        val effectiveLowerHeight = (DeviceConfig.LOWER_SCREEN_HEIGHT / ppiRatio).toInt()
+        val totalRequiredHeight = DeviceConfig.UPPER_SCREEN_HEIGHT + effectiveLowerHeight
         
-        // 计算实际裁切尺寸
-        val cropWidth = (max(DeviceConfig.UPPER_SCREEN_WIDTH, DeviceConfig.LOWER_SCREEN_WIDTH) * cropRatio).toInt()
-        val cropTotalHeight = (totalTargetHeight * cropRatio).toInt()
+        // 计算缩放比例，保持宽高比
+        val widthRatio = originalWidth.toFloat() / max(DeviceConfig.UPPER_SCREEN_WIDTH, DeviceConfig.LOWER_SCREEN_WIDTH)
+        val heightRatio = originalHeight.toFloat() / totalRequiredHeight
+        val scaleRatio = minOf(widthRatio, heightRatio)
         
-        // 确保裁切尺寸不超出原始图片
+        // 确保至少有最小尺寸
+        if (scaleRatio <= 0) {
+            // 如果原始图片太小，创建一个最小尺寸的空白图片
+            val defaultUpper = Bitmap.createBitmap(upperScreenOutputWidth, upperScreenOutputHeight, Bitmap.Config.ARGB_8888)
+            val defaultLower = Bitmap.createBitmap(lowerScreenOutputWidth, lowerScreenOutputHeight, Bitmap.Config.ARGB_8888)
+            defaultUpper.eraseColor(android.graphics.Color.BLACK)
+            defaultLower.eraseColor(android.graphics.Color.BLACK)
+            return Pair(defaultUpper, defaultLower)
+        }
+
+        // 计算裁切区域尺寸
+        val cropWidth = (max(DeviceConfig.UPPER_SCREEN_WIDTH, DeviceConfig.LOWER_SCREEN_WIDTH) * scaleRatio).toInt()
+        val cropTotalHeight = (totalRequiredHeight * scaleRatio).toInt()
+        
+        // 确保裁切尺寸不超过原始图片
         val safeCropWidth = minOf(cropWidth, originalWidth)
         val safeCropTotalHeight = minOf(cropTotalHeight, originalHeight)
         
-        // 计算裁切位置（居中）
-        val cropStartX = (originalWidth - safeCropWidth) / 2
-        val cropStartY = (originalHeight - safeCropTotalHeight) / 2
+        // 计算裁切起始位置（居中）
+        val cropStartX = maxOf(0, (originalWidth - safeCropWidth) / 2)
+        val cropStartY = maxOf(0, (originalHeight - safeCropTotalHeight) / 2)
 
-        // 分别裁切上下屏内容
-        val upperCropHeight = minOf((DeviceConfig.UPPER_SCREEN_HEIGHT * cropRatio).toInt(), safeCropTotalHeight)
+        // 裁切上屏内容 - 从图片顶部开始
+        val upperCropHeight = minOf((DeviceConfig.UPPER_SCREEN_HEIGHT * scaleRatio).toInt(), safeCropTotalHeight)
         val upperCropBitmap = cropBitmap(
             originalBitmap,
             cropStartX,
@@ -62,7 +74,7 @@ object ImageProcessor {
             upperCropHeight
         )
         
-        // 裁切下屏内容 - 因为需要考虑PPI，所以需要在原始图片中裁切更大的区域
+        // 裁切下屏内容 - 从上屏下方开始
         var lowerCropBitmap: Bitmap? = null
         if (safeCropTotalHeight > upperCropHeight) {
             val lowerCropStartY = cropStartY + upperCropHeight
@@ -75,37 +87,36 @@ object ImageProcessor {
                 lowerCropHeight
             )
         } else {
-            // 如果原始图片高度不足以包含完整的上下屏高度，则下屏为空白
+            // 原图高度不够时，创建空白下屏
             lowerCropBitmap = Bitmap.createBitmap(
                 safeCropWidth,
-                1, // 至少创建一个像素高的图片
+                maxOf(1, (DeviceConfig.LOWER_SCREEN_HEIGHT * scaleRatio).toInt()),
                 Bitmap.Config.ARGB_8888
             ).apply {
-                val canvas = Canvas(this)
-                canvas.drawColor(android.graphics.Color.BLACK)
+                eraseColor(android.graphics.Color.BLACK)
             }
         }
 
-        // 将裁切出的上屏图片缩放到目标分辨率
+        // 将裁切出的图片缩放到最终输出分辨率
         val upperScreenBitmap = scaleBitmapToTarget(upperCropBitmap, upperScreenOutputWidth, upperScreenOutputHeight)
         
-        // 对下屏内容应用PPI补偿 - 调整内容以确保在不同PPI屏幕上显示相同的物理尺寸
-        val lowerCropBitmapWithPPI = if (ppiRatio != 1.0f) {
-            // 按PPI比例缩放下屏内容，以确保物理尺寸一致
-            val ppiAdjustedWidth = (lowerCropBitmap!!.width / ppiRatio).toInt()
-            val ppiAdjustedHeight = (lowerCropBitmap.height / ppiRatio).toInt()
-            scaleBitmapToTarget(lowerCropBitmap, ppiAdjustedWidth, ppiAdjustedHeight)
+        // 为下屏应用PPI补偿
+        val lowerCropForPPI = if (ppiRatio != 1.0f) {
+            // 为确保物理尺寸一致，需要反向补偿（因为下屏PPI低，所以内容要适当放大）
+            // 例如，如果下屏PPI是上屏的80%，则内容需要放大1/0.8=1.25倍
+            val ppiCompensatedWidth = (lowerCropBitmap!!.width / ppiRatio).toInt()
+            val ppiCompensatedHeight = (lowerCropBitmap.height / ppiRatio).toInt()
+            scaleBitmapToTarget(lowerCropBitmap, ppiCompensatedWidth, ppiCompensatedHeight)
         } else {
             lowerCropBitmap!!
         }
         
-        // 将下屏内容缩放到输出分辨率
-        val lowerScreenBitmap = scaleBitmapToTarget(lowerCropBitmapWithPPI, lowerScreenOutputWidth, lowerScreenOutputHeight)
+        val lowerScreenBitmap = scaleBitmapToTarget(lowerCropForPPI, lowerScreenOutputWidth, lowerScreenOutputHeight)
 
         // 回收临时图片以释放内存
         if (upperScreenBitmap != upperCropBitmap) upperCropBitmap.recycle()
-        if (lowerScreenBitmap != lowerCropBitmapWithPPI && lowerCropBitmapWithPPI != lowerCropBitmap!!) lowerCropBitmapWithPPI.recycle()
-        if (lowerCropBitmap != lowerScreenBitmap && lowerCropBitmap != lowerCropBitmapWithPPI) lowerCropBitmap.recycle()
+        if (lowerScreenBitmap != lowerCropForPPI && lowerCropForPPI != lowerCropBitmap!!) lowerCropForPPI.recycle()
+        if (lowerCropBitmap != lowerScreenBitmap && lowerCropBitmap != lowerCropForPPI) lowerCropBitmap.recycle()
 
         return Pair(upperScreenBitmap, lowerScreenBitmap)
     }
