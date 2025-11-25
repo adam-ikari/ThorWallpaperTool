@@ -169,22 +169,29 @@ object ImageProcessor {
             true
         )
         
-        // 如果缩放后的尺寸与目标尺寸不完全相同，则居中裁切
+        // 创建目标尺寸的画布，确保输出尺寸始终正确
         if (scaledWidth == targetWidth && scaledHeight == targetHeight) {
             return scaledBitmap
         } else {
-            // 居中裁切以适应目标尺寸
-            val x = maxOf(0, (scaledWidth - targetWidth) / 2)
-            val y = maxOf(0, (scaledHeight - targetHeight) / 2)
+            // 创建目标尺寸的位图作为画布
+            val result = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
+            val canvas = android.graphics.Canvas(result)
+            canvas.drawColor(android.graphics.Color.BLACK) // 填充黑色背景
             
-            // 确保裁切区域不超过图片尺寸
-            val cropWidth = minOf(targetWidth, scaledWidth - x)
-            val cropHeight = minOf(targetHeight, scaledHeight - y)
+            // 计算居中绘制的位置
+            val x = (targetWidth - scaledWidth) / 2
+            val y = (targetHeight - scaledHeight) / 2
             
-            val result = Bitmap.createBitmap(scaledBitmap, x, y, cropWidth, cropHeight)
+            // 在画布上绘制缩放后的图片
+            val paint = android.graphics.Paint().apply {
+                isFilterBitmap = true // 启用过滤以获得更平滑的效果
+                isAntiAlias = true    // 启用抗锯齿
+            }
+            
+            canvas.drawBitmap(scaledBitmap, x.toFloat(), y.toFloat(), paint)
             
             // 回收中间图片以释放内存
-            if (scaledBitmap != result) scaledBitmap.recycle()
+            scaledBitmap.recycle()
             
             return result
         }
