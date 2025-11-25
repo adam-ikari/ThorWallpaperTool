@@ -23,8 +23,8 @@ object ImageProcessor {
         val originalHeight = originalBitmap.height
 
         // 为保持物理尺寸一致，需要考虑PPI差异
-        // 下屏PPI较低，需要相应调整内容以确保物理尺寸一致
-        val ppiRatio = DeviceConfig.LOWER_SCREEN_PPI / DeviceConfig.UPPER_SCREEN_PPI
+        // 下屏PPI较低（297），上屏PPI较高（367），需要相应调整内容以确保物理尺寸一致
+        val ppiRatio = DeviceConfig.LOWER_SCREEN_PPI / DeviceConfig.UPPER_SCREEN_PPI  // 297/367 ≈ 0.809
         
         // 计算输出尺寸
         val upperScreenOutputWidth = DeviceConfig.UPPER_SCREEN_WIDTH  // 1920
@@ -33,7 +33,8 @@ object ImageProcessor {
         val lowerScreenOutputHeight = DeviceConfig.LOWER_SCREEN_HEIGHT  // 1080
 
         // 计算缩放比例，确保原始图片覆盖上下屏所需的总面积（考虑PPI差异）
-        // 为了保持物理尺寸一致，下屏在原始图片中需要的像素数应为：实际像素 / PPI比率
+        // 为了保持物理尺寸一致，下屏在原始图片中需要更多的像素（因为PPI更低）
+        // 需要计算：原始图片中多少像素高度才能在下屏上显示与上屏相同物理高度的内容
         val effectiveLowerHeight = (DeviceConfig.LOWER_SCREEN_HEIGHT / ppiRatio).toInt()
         val totalRequiredHeight = DeviceConfig.UPPER_SCREEN_HEIGHT + effectiveLowerHeight
         
@@ -90,20 +91,23 @@ object ImageProcessor {
             // 原图高度不够时，创建空白下屏
             lowerCropBitmap = Bitmap.createBitmap(
                 safeCropWidth,
-                maxOf(1, (DeviceConfig.LOWER_SCREEN_HEIGHT * scaleRatio).toInt()),
+                1, // 至少创建一个像素高的图片
                 Bitmap.Config.ARGB_8888
             ).apply {
-                eraseColor(android.graphics.Color.BLACK)
+                val canvas = android.graphics.Canvas(this)
+                canvas.drawColor(android.graphics.Color.BLACK)
             }
         }
 
         // 将裁切出的图片缩放到最终输出分辨率
         val upperScreenBitmap = scaleBitmapToTarget(upperCropBitmap, upperScreenOutputWidth, upperScreenOutputHeight)
         
-        // 为下屏应用PPI补偿
+        // 为下屏应用PPI补偿 - 确保物理尺寸一致
+        // 因为下屏PPI更低，所以内容需要放大，以补偿较低的像素密度
         val lowerCropForPPI = if (ppiRatio != 1.0f) {
-            // 为确保物理尺寸一致，需要反向补偿（因为下屏PPI低，所以内容要适当放大）
-            // 例如，如果下屏PPI是上屏的80%，则内容需要放大1/0.8=1.25倍
+            // 为了补偿PPI差异，需要放大内容
+            // 由于ppiRatio是下屏PPI/上屏PPI，值小于1，所以需要除以这个比率来放大
+            // 例如，如果ppiRatio=0.8（下屏PPI是上屏的80%），则需要放大1/0.8=1.25倍
             val ppiCompensatedWidth = (lowerCropBitmap!!.width / ppiRatio).toInt()
             val ppiCompensatedHeight = (lowerCropBitmap.height / ppiRatio).toInt()
             scaleBitmapToTarget(lowerCropBitmap, ppiCompensatedWidth, ppiCompensatedHeight)
@@ -111,6 +115,7 @@ object ImageProcessor {
             lowerCropBitmap!!
         }
         
+        // 将PPI补偿后的内容缩放到最终输出分辨率
         val lowerScreenBitmap = scaleBitmapToTarget(lowerCropForPPI, lowerScreenOutputWidth, lowerScreenOutputHeight)
 
         // 回收临时图片以释放内存

@@ -57,12 +57,14 @@ ThorWallpaperTool/
 ## 构建和运行
 
 ### 环境要求
+
 - Android Studio
 - Android SDK (compileSdk 36, minSdk 33, targetSdk 36)
 - Java 11
 - Kotlin (版本根据 gradle/libs.versions.toml 中的配置)
 
 ### 构建命令
+
 ```bash
 # 使用 Gradle Wrapper 构建项目
 ./gradlew build
@@ -75,6 +77,7 @@ ThorWallpaperTool/
 ```
 
 ### 依赖库
+
 - androidx.core.ktx
 - androidx.appcompat
 - material
