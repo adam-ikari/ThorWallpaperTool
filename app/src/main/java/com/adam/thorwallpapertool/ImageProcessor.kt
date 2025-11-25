@@ -10,7 +10,7 @@ object ImageProcessor {
     
     /**
      * 根据索尔掌机的屏幕参数裁切壁纸
-     * 先分别裁切出上下屏的内容，然后缩放到目标分辨率
+     * 先计算考虑PPI的裁切坐标和尺寸，然后裁切，最后缩放到目标分辨率
      * 确保上下屏的壁纸在物理尺寸上可以拼接
      * 使用PPI计算确保内容在不同屏幕上视觉/物理尺寸一致
      * 
@@ -22,49 +22,46 @@ object ImageProcessor {
         val originalWidth = originalBitmap.width
         val originalHeight = originalBitmap.height
 
-        // 为保持物理尺寸一致，需要考虑PPI差异
-        // 下屏PPI较低（297），上屏PPI较高（367），需要相应调整内容以确保物理尺寸一致
+        // PPI比率：下屏PPI / 上屏PPI
         val ppiRatio = DeviceConfig.LOWER_SCREEN_PPI / DeviceConfig.UPPER_SCREEN_PPI  // 297/367 ≈ 0.809
         
-        // 计算输出尺寸
-        val upperScreenOutputWidth = DeviceConfig.UPPER_SCREEN_WIDTH  // 1920
-        val upperScreenOutputHeight = DeviceConfig.UPPER_SCREEN_HEIGHT  // 1080
-        val lowerScreenOutputWidth = DeviceConfig.LOWER_SCREEN_WIDTH  // 1240
-        val lowerScreenOutputHeight = DeviceConfig.LOWER_SCREEN_HEIGHT  // 1080
+        // 目标输出尺寸
+        val upperOutputWidth = DeviceConfig.UPPER_SCREEN_WIDTH   // 1920
+        val upperOutputHeight = DeviceConfig.UPPER_SCREEN_HEIGHT // 1080
+        val lowerOutputWidth = DeviceConfig.LOWER_SCREEN_WIDTH   // 1240
+        val lowerOutputHeight = DeviceConfig.LOWER_SCREEN_HEIGHT // 1080
 
-        // 为确保内容在不同PPI屏幕上显示相同的物理尺寸，我们需要在原始图片中为下屏裁切更多像素
-        // 原始图片中下屏应占的高度 = 实际输出高度 / PPI比率
-        val requiredLowerHeightInOriginal = (lowerScreenOutputHeight / ppiRatio).toInt()
+        // 为了物理尺寸一致，需要根据PPI计算在原始图片中裁切的尺寸
+        // 下屏在原始图片中需要裁切的高度 = 目标高度 / PPI比率
+        val lowerCropHeight = (lowerOutputHeight / ppiRatio).toInt()
         
-        // 计算缩放比例，确保原始图片能覆盖上下屏所需区域，同时保持宽高比
-        val upperScaleRatio = upperScreenOutputWidth.toFloat() / originalWidth
-        val lowerScaleRatio = lowerScreenOutputWidth.toFloat() / originalWidth
-        val heightScaleRatio = (upperScreenOutputHeight + requiredLowerHeightInOriginal).toFloat() / originalHeight
+        // 计算裁切区域的宽度（取上下屏目标宽度的最大值）
+        val targetCropWidth = max(upperOutputWidth, lowerOutputWidth)
         
-        // 使用最小比例以确保图片覆盖整个区域，同时保持宽高比
-        val scaleRatio = minOf(upperScaleRatio, lowerScaleRatio, heightScaleRatio, 1.0f) // 限制不超过1.0避免放大
+        // 计算缩放比例，保持宽高比
+        val widthScale = targetCropWidth.toFloat() / originalWidth
+        val heightScale = (upperOutputHeight + lowerCropHeight).toFloat() / originalHeight
+        val scale = maxOf(widthScale, heightScale)  // 使用max确保原始图片能覆盖所需区域
+
+        // 计算实际裁切尺寸（如果原图较小则按比例裁切，如果原图较大则裁切目标尺寸）
+        val cropWidth = if (originalWidth > targetCropWidth) {
+            targetCropWidth
+        } else {
+            originalWidth
+        }
         
-        // 如果原始图片太小，使用最大可能的缩放比例
-        var finalScaleRatio = scaleRatio
-        if (scaleRatio > 1.0f) {
-            finalScaleRatio = minOf(
-                originalWidth.toFloat() / max(upperScreenOutputWidth, lowerScreenOutputWidth),
-                originalHeight.toFloat() / (upperScreenOutputHeight + requiredLowerHeightInOriginal)
-            )
+        val cropHeight = if (originalHeight > (upperOutputHeight + lowerCropHeight)) {
+            (upperOutputHeight + lowerCropHeight)
+        } else {
+            originalHeight
         }
 
-        // 计算在原始图片中实际要裁切的区域
-        val cropWidth = minOf((originalWidth * finalScaleRatio).toInt(), originalWidth)
-        val cropHeight = minOf((originalHeight * finalScaleRatio).toInt(), originalHeight)
-        
         // 计算裁切起始位置（居中）
         val cropStartX = (originalWidth - cropWidth) / 2
         val cropStartY = (originalHeight - cropHeight) / 2
 
-        // 计算上屏在裁切区域中的高度
-        val upperCropHeight = minOf((upperScreenOutputHeight * finalScaleRatio).toInt(), cropHeight)
-        
-        // 裁切上屏内容 - 从裁切区域顶部开始
+        // 计算上屏裁切区域
+        val upperCropHeight = minOf(upperOutputHeight, cropHeight)
         val upperCropBitmap = cropBitmap(
             originalBitmap,
             cropStartX,
@@ -72,24 +69,24 @@ object ImageProcessor {
             cropWidth,
             upperCropHeight
         )
-        
-        // 裁切下屏内容 - 从上屏下方开始
+
+        // 计算下屏裁切区域
         var lowerCropBitmap: Bitmap? = null
         if (cropHeight > upperCropHeight) {
             val lowerCropStartY = cropStartY + upperCropHeight
-            val lowerCropHeight = cropHeight - upperCropHeight
+            val lowerCropActualHeight = cropHeight - upperCropHeight
             lowerCropBitmap = cropBitmap(
                 originalBitmap,
                 cropStartX,
                 lowerCropStartY,
                 cropWidth,
-                lowerCropHeight
+                lowerCropActualHeight
             )
         } else {
-            // 原图高度不够时，创建最小尺寸的下屏内容
+            // 如果原图高度不足以包含上下屏内容，创建最小尺寸的下屏
             lowerCropBitmap = Bitmap.createBitmap(
                 cropWidth,
-                1, // 至少创建一个像素高的图片
+                maxOf(1, cropHeight), // 至少1像素高
                 Bitmap.Config.ARGB_8888
             ).apply {
                 val canvas = android.graphics.Canvas(this)
@@ -97,43 +94,24 @@ object ImageProcessor {
             }
         }
 
-        // 将裁切出的上屏内容缩放到输出分辨率
-        val upperScreenBitmap = scaleBitmapToTarget(upperCropBitmap, upperScreenOutputWidth, upperScreenOutputHeight)
+        // 将裁切内容缩放到目标分辨率
+        val upperScreenBitmap = scaleBitmapToTarget(upperCropBitmap, upperOutputWidth, upperOutputHeight)
         
-        // 对下屏内容应用PPI补偿 - 确保物理尺寸一致
-        val lowerCropWithPPI = if (ppiRatio != 1.0f) {
-            // 为补偿PPI差异，需要按PPI比率调整下屏内容
-            // 因为下屏PPI低，内容需要适当放大以在物理尺寸上匹配上屏
-            val ppiAdjustedWidth = (lowerCropBitmap!!.width / ppiRatio).toInt()
-            val ppiAdjustedHeight = (lowerCropBitmap.height / ppiRatio).toInt()
-            // 创建新位图来存储PPI调整后的内容
-            val ppiAdjustedBitmap = Bitmap.createBitmap(ppiAdjustedWidth, ppiAdjustedHeight, Bitmap.Config.ARGB_8888)
-            val canvas = android.graphics.Canvas(ppiAdjustedBitmap)
-            canvas.drawColor(android.graphics.Color.BLACK)
-            
-            // 计算居中绘制位置
-            val centerX = (ppiAdjustedWidth - lowerCropBitmap.width) / 2
-            val centerY = (ppiAdjustedHeight - lowerCropBitmap.height) / 2
-            
-            val paint = android.graphics.Paint().apply {
-                isFilterBitmap = true
-                isAntiAlias = true
-            }
-            
-            canvas.drawBitmap(lowerCropBitmap, centerX.toFloat(), centerY.toFloat(), paint)
-            
-            ppiAdjustedBitmap
+        // 应用PPI补偿到下屏内容（确保物理尺寸一致）
+        val lowerWithPPI = if (ppiRatio != 1.0f) {
+            // 如果下屏PPI较低，需要放大内容以补偿
+            val ppiAdjustedHeight = (lowerCropBitmap!!.height * ppiRatio).toInt()
+            scaleBitmapToTarget(lowerCropBitmap, lowerCropBitmap.width, ppiAdjustedHeight)
         } else {
             lowerCropBitmap!!
         }
         
-        // 将PPI补偿后的内容缩放到最终输出分辨率
-        val lowerScreenBitmap = scaleBitmapToTarget(lowerCropWithPPI, lowerScreenOutputWidth, lowerScreenOutputHeight)
+        val lowerScreenBitmap = scaleBitmapToTarget(lowerWithPPI, lowerOutputWidth, lowerOutputHeight)
 
         // 回收临时图片以释放内存
         if (upperScreenBitmap != upperCropBitmap) upperCropBitmap.recycle()
-        if (lowerScreenBitmap != lowerCropWithPPI && lowerCropWithPPI != lowerCropBitmap!!) lowerCropWithPPI.recycle()
-        if (lowerCropBitmap != lowerScreenBitmap && lowerCropBitmap != lowerCropWithPPI) lowerCropBitmap.recycle()
+        if (lowerScreenBitmap != lowerWithPPI && lowerWithPPI != lowerCropBitmap!!) lowerWithPPI.recycle()
+        if (lowerCropBitmap != lowerScreenBitmap && lowerCropBitmap != lowerWithPPI) lowerCropBitmap.recycle()
 
         return Pair(upperScreenBitmap, lowerScreenBitmap)
     }
