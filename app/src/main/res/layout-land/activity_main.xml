@@ -105,17 +105,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="8dp"
                     android:inputType="number"
-                    android:hint="@string/gap_hint"
                     android:text="0"
                     android:textAlignment="center" />
-
-                <CheckBox
-                    android:id="@+id/checkPPICompensation"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
-                    android:text="@string/ppi_compensation_label_land"
-                    android:checked="true" />
 
                 <Button
                     android:id="@+id/btnProcessImage"
