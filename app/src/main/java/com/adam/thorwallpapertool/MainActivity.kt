@@ -57,7 +57,6 @@ class MainActivity : AppCompatActivity() {
         btnProcessImage = findViewById(R.id.btnProcessImage)
         selectedImageInfo = findViewById(R.id.selectedImageInfo)
         editGap = findViewById(R.id.editGap)
-        checkPPICompensation = findViewById(R.id.checkPPICompensation)
         progressBar = findViewById(R.id.progressBar)
     }
     
@@ -177,11 +176,8 @@ class MainActivity : AppCompatActivity() {
     
     private fun processWallpaperImage(originalBitmap: Bitmap, gap: Int = 0): Boolean {
         try {
-            // 从UI控件获取PPI补偿设置
-            val enablePPICompensation = checkPPICompensation.isChecked
-            
-            // 使用ImageProcessor处理图片
-            val (upperBitmap, lowerBitmap) = ImageProcessor.processWallpaper(originalBitmap, gap, enablePPICompensation)
+            // 使用ImageProcessor处理图片 - 现在默认使用PPI计算
+            val (upperBitmap, lowerBitmap) = ImageProcessor.processWallpaper(originalBitmap, gap)
             
             // 保存处理后的图片
             saveProcessedImages(upperBitmap, lowerBitmap)

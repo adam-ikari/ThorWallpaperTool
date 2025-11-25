@@ -43,7 +43,7 @@ ThorWallpaperTool/
 - **上下拼接**：以上下方式拼接（上屏在上，下屏在下）
 - **组合画布**：创建上下拼接的组合画布，将缩放后的图片居中放置
 - **精确裁切**：从组合画布中精确裁切上下屏壁纸
-- **PPI优化**：考虑上下屏PPI差异，确保内容在不同屏幕上视觉大小一致
+- **PPI 优化**：考虑上下屏 PPI 差异，确保内容在不同屏幕上视觉大小一致
 - **间隔支持**：支持自定义上屏与下屏壁纸之间的间隔
 
 ### 用户界面 (MainActivity.kt)
@@ -57,12 +57,14 @@ ThorWallpaperTool/
 ## 构建和运行
 
 ### 环境要求
+
 - Android Studio
 - Android SDK (compileSdk 36, minSdk 33, targetSdk 36)
 - Java 11
 - Kotlin (版本根据 gradle/libs.versions.toml 中的配置)
 
 ### 构建命令
+
 ```bash
 # 使用 Gradle Wrapper 构建项目
 ./gradlew build
@@ -75,6 +77,7 @@ ThorWallpaperTool/
 ```
 
 ### 依赖库
+
 - androidx.core.ktx
 - androidx.appcompat
 - material

@@ -101,38 +101,24 @@
                 android:layout_marginTop="8dp"
                 android:layout_marginEnd="24dp"
                 android:inputType="number"
-                android:hint="@string/gap_hint"
                 android:text="0"
                 android:textAlignment="center"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/gapLabel" />
 
-            <CheckBox
-                android:id="@+id/checkPPICompensation"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="24dp"
-                android:layout_marginTop="16dp"
-                android:layout_marginEnd="24dp"
-                android:text="@string/ppi_compensation_label"
-                android:checked="true"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/editGap" />
-
             <Button
                 android:id="@+id/btnProcessImage"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="24dp"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="16dp"
                 android:layout_marginEnd="24dp"
                 android:text="@string/btn_process_image"
                 android:enabled="false"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/checkPPICompensation" />
+                app:layout_constraintTop_toBottomOf="@id/editGap" />
 
             <ProgressBar
                 android:id="@+id/progressBar"
