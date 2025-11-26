@@ -105,8 +105,18 @@
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="8dp"
                     android:inputType="number"
-                    android:text="0"
+                    android:text="289"
                     android:textAlignment="center" />
+
+                <TextView
+                    android:id="@+id/gapDescription"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="@string/gap_description"
+                    android:textAlignment="center"
+                    android:textSize="10sp"
+                    android:textColor="#666666" />
 
                 <Button
                     android:id="@+id/btnProcessImage"
