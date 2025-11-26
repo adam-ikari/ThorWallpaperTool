@@ -101,11 +101,26 @@
                 android:layout_marginTop="8dp"
                 android:layout_marginEnd="24dp"
                 android:inputType="number"
-                android:text="0"
+                android:text="289"
                 android:textAlignment="center"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/gapLabel" />
+
+            <TextView
+                android:id="@+id/gapDescription"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="24dp"
+                android:layout_marginTop="4dp"
+                android:layout_marginEnd="24dp"
+                android:text="@string/gap_description"
+                android:textAlignment="center"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/editGap" />
 
             <Button
                 android:id="@+id/btnProcessImage"
@@ -118,7 +133,7 @@
                 android:enabled="false"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/editGap" />
+                app:layout_constraintTop_toBottomOf="@id/gapDescription" />
 
             <ProgressBar
                 android:id="@+id/progressBar"

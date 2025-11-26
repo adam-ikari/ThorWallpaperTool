@@ -7,7 +7,9 @@
     <string name="btn_select_image">选择图片</string>
     <string name="no_image_selected">未选择图片</string>
     <string name="gap_label">屏幕间隔 (像素):</string>
-    <string name="gap_hint">输入间隔像素数 (默认: 0)</string>
+    <string name="gap_hint">输入间隔像素数 (建议: 289，对应2cm物理距离)</string>
+    <string name="gap_description">间隔像素为最终输出时上下屏之间的像素距离
+上屏底部和下屏顶部之间的间隔</string>
     <string name="ppi_compensation_label">启用PPI补偿 (下屏放大1.1倍)</string>
     <string name="btn_process_image">生成壁纸</string>
     <string name="loading_image_error">加载图片失败</string>
