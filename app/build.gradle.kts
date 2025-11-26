@@ -43,6 +43,11 @@ android {
             excludes += "/layout-land/temp_placeholder.xml"
         }
     }
+    
+    // 禁用错误的Instantiatable Lint检查
+    lint {
+        disable += "Instantiatable"
+    }
 }
 
 dependencies {

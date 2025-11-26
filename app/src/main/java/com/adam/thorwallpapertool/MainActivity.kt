@@ -21,6 +21,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnProcessImage: Button
     private lateinit var selectedImageInfo: TextView
     private lateinit var editGap: EditText
+    private lateinit var checkPPICompensation: CheckBox
     private lateinit var progressBar: ProgressBar
     
     private var selectedImageUri: Uri? = null
@@ -75,8 +76,26 @@ class MainActivity : AppCompatActivity() {
     
     private fun loadAndDisplayImage(uri: Uri) {
         try {
+            // 获取图片尺寸以预先判断是否为高分辨率图片
+            val options = BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+            }
+            contentResolver.openInputStream(uri)?.use {
+                BitmapFactory.decodeStream(it, null, options)
+            }
+            
+            // 计算缩放比例以适应预览，避免在UI线程加载过大图片
+            val reqWidth = 800  // 预览最大宽度
+            val reqHeight = 600 // 预览最大高度
+            
+            options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight)
+            options.inJustDecodeBounds = false
+            options.inPreferredConfig = Bitmap.Config.ARGB_8888
+            options.inMutable = true
+            
+            // 加载缩略图用于预览
             val inputStream = contentResolver.openInputStream(uri)
-            selectedBitmap = BitmapFactory.decodeStream(inputStream)
+            selectedBitmap = BitmapFactory.decodeStream(inputStream, null, options)
             inputStream?.close()
             
             if (selectedBitmap != null) {
@@ -85,8 +104,28 @@ class MainActivity : AppCompatActivity() {
                 selectedImageInfo.text = "已选择图片: ${selectedBitmap?.width}x${selectedBitmap?.height}"
             }
         } catch (e: Exception) {
-            Toast.makeText(this, "加载图片失败: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.loading_image_error) + ": ${e.message}", Toast.LENGTH_SHORT).show()
         }
+    }
+    
+    /**
+     * 计算合适的inSampleSize值，用于加载缩略图
+     */
+    private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
+        val (height: Int, width: Int) = options.run { outHeight to outWidth }
+        var inSampleSize = 1
+
+        if (height > reqHeight || width > reqWidth) {
+            val halfHeight: Int = height / 2
+            val halfWidth: Int = width / 2
+
+            // 计算最大的inSampleSize值，该值保证各边长度都大于所需尺寸
+            while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
+                inSampleSize *= 2
+            }
+        }
+
+        return inSampleSize
     }
     
     private fun processImage() {
@@ -117,31 +156,37 @@ class MainActivity : AppCompatActivity() {
                         btnProcessImage.isEnabled = true
                         
                         if (result) {
-                            Toast.makeText(this, "壁纸生成成功！", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(this, "壁纸生成失败", Toast.LENGTH_SHORT).show()
-                        }
+                    Toast.makeText(this, R.string.process_success, Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, R.string.process_failed, Toast.LENGTH_SHORT).show()
+                }
                     }
                 } catch (e: Exception) {
                     runOnUiThread {
                         progressBar.visibility = View.GONE
                         btnProcessImage.isEnabled = true
-                        Toast.makeText(this, "处理图片时出错: ${e.message}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, getString(R.string.process_error) + ": ${e.message}", Toast.LENGTH_SHORT).show()
                     }
                 }
             }.start()
         } ?: run {
-            Toast.makeText(this, "请先选择一张图片", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, R.string.no_image_selected_error, Toast.LENGTH_SHORT).show()
         }
     }
     
     private fun processWallpaperImage(originalBitmap: Bitmap, gap: Int = 0): Boolean {
         try {
-            // 使用ImageProcessor处理图片
+            // 使用ImageProcessor处理图片 - 现在默认使用PPI计算
             val (upperBitmap, lowerBitmap) = ImageProcessor.processWallpaper(originalBitmap, gap)
             
             // 保存处理后的图片
             saveProcessedImages(upperBitmap, lowerBitmap)
+            
+            // 回收生成的位图以释放内存
+            if (upperBitmap != originalBitmap && lowerBitmap != originalBitmap) {
+                upperBitmap.recycle()
+                lowerBitmap.recycle()
+            }
             
             return true
         } catch (e: Exception) {
@@ -162,70 +207,52 @@ class MainActivity : AppCompatActivity() {
             
             if (upperWallpaperUri != null && lowerWallpaperUri != null) {
                 runOnUiThread {
-                    Toast.makeText(this, "壁纸已保存到相册", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, R.string.save_success, Toast.LENGTH_SHORT).show()
                 }
             }
         } catch (e: Exception) {
             e.printStackTrace()
             runOnUiThread {
-                Toast.makeText(this, "保存壁纸时出错: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.save_error) + ": ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }
     
     private fun saveBitmapToGallery(bitmap: Bitmap, displayName: String): Uri? {
-
         return try {
-
             val contentValues = android.content.ContentValues().apply {
-
                 put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, displayName)
-
                 put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-
-                put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, android.os.Environment.DIRECTORY_PICTURES + "/ThorWallpaperTool/")
-
+                put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, 
+                    android.os.Environment.DIRECTORY_PICTURES + "/ThorWallpaperTool/")
             }
-
-            
 
             val contentResolver = contentResolver
-
             val uri = contentResolver.insert(
-
                 android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-
                 contentValues
-
             )
 
-            
-
             if (uri != null) {
-
-                val outputStream = contentResolver.openOutputStream(uri)
-
-                if (outputStream != null) {
-
+                contentResolver.openOutputStream(uri)?.use { outputStream ->
                     bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, outputStream)
-
-                    outputStream.close()
-
                 }
-
             }
 
-            
-
             uri
-
         } catch (e: Exception) {
-
             e.printStackTrace()
-
             null
-
         }
-
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        // 回收选中的位图以释放内存
+        selectedBitmap?.let { 
+            if (!it.isRecycled) {
+                it.recycle()
+            }
+        }
     }
 }

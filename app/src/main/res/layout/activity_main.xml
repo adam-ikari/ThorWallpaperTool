@@ -20,7 +20,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
-                android:text="索尔掌机壁纸工具"
+                android:text="@string/title"
                 android:textSize="24sp"
                 android:textStyle="bold"
                 app:layout_constraintEnd_toEndOf="parent"
@@ -34,7 +34,7 @@
                 android:layout_marginStart="24dp"
                 android:layout_marginTop="16dp"
                 android:layout_marginEnd="24dp"
-                android:text="本应用将帮助您将壁纸裁切到适合索尔双屏掌机的分辨率：\n上屏（主屏）：1920x1080\n下屏（副屏）：1240x1080"
+                android:text="@string/description"
                 android:textAlignment="center"
                 android:textSize="14sp"
                 app:layout_constraintEnd_toEndOf="parent"
@@ -50,7 +50,7 @@
                 android:layout_marginEnd="24dp"
                 android:scaleType="centerCrop"
                 android:background="#f0f0f0"
-                android:contentDescription="图片预览"
+                android:contentDescription="@string/image_preview_content_description"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/description" />
@@ -62,7 +62,7 @@
                 android:layout_marginStart="24dp"
                 android:layout_marginTop="24dp"
                 android:layout_marginEnd="24dp"
-                android:text="选择图片"
+                android:text="@string/btn_select_image"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/imagePreview" />
@@ -74,7 +74,7 @@
                 android:layout_marginStart="24dp"
                 android:layout_marginTop="12dp"
                 android:layout_marginEnd="24dp"
-                android:text="未选择图片"
+                android:text="@string/no_image_selected"
                 android:textAlignment="center"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -87,7 +87,7 @@
                 android:layout_marginStart="24dp"
                 android:layout_marginTop="24dp"
                 android:layout_marginEnd="24dp"
-                android:text="屏幕间隔 (像素):"
+                android:text="@string/gap_label"
                 android:textAlignment="center"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -101,25 +101,39 @@
                 android:layout_marginTop="8dp"
                 android:layout_marginEnd="24dp"
                 android:inputType="number"
-                android:hint="输入间隔像素数 (默认: 0)"
-                android:text="0"
+                android:text="289"
                 android:textAlignment="center"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/gapLabel" />
+
+            <TextView
+                android:id="@+id/gapDescription"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="24dp"
+                android:layout_marginTop="4dp"
+                android:layout_marginEnd="24dp"
+                android:text="@string/gap_description"
+                android:textAlignment="center"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/editGap" />
 
             <Button
                 android:id="@+id/btnProcessImage"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="24dp"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="16dp"
                 android:layout_marginEnd="24dp"
-                android:text="生成壁纸"
+                android:text="@string/btn_process_image"
                 android:enabled="false"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/editGap" />
+                app:layout_constraintTop_toBottomOf="@id/gapDescription" />
 
             <ProgressBar
                 android:id="@+id/progressBar"
