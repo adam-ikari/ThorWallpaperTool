@@ -44,8 +44,11 @@ object ImageProcessor {
         val lowerPhysicalEquivalentHeight = (lowerOutputHeight / ppiRatio).toInt()
         val lowerPhysicalEquivalentWidth = (lowerOutputWidth / ppiRatio).toInt()
         
+        // 将间隔像素加到上屏的目标高度上
+        val upperHeightWithGap = upperOutputHeight + gap
+        
         // 计算总的物理等效裁切高度
-        val totalPhysicalHeight = upperOutputHeight + lowerPhysicalEquivalentHeight + gap
+        val totalPhysicalHeight = upperHeightWithGap + lowerPhysicalEquivalentHeight
         
         // 确定裁切宽度（取两个屏幕物理等效宽度的较大值）
         val targetCropWidth = max(upperOutputWidth, lowerPhysicalEquivalentWidth)
@@ -78,22 +81,26 @@ object ImageProcessor {
         val cropStartX = maxOf(0, (originalWidth - actualCropWidth) / 2)
         val cropStartY = maxOf(0, (originalHeight - actualCropHeight) / 2)
 
-        // 计算上屏和下屏在裁切区域中的高度（不包括间隔）
-        val upperCropHeight = ((upperOutputHeight.toFloat() / totalPhysicalHeight) * actualCropHeight).toInt()
-        val remainingHeight = actualCropHeight - upperCropHeight - gap
+        // 计算上屏和下屏在裁切区域中的高度
+        val upperCropHeight = ((upperHeightWithGap.toFloat() / totalPhysicalHeight) * actualCropHeight).toInt()
+        val remainingHeight = actualCropHeight - upperCropHeight
         val lowerCropHeight = if (remainingHeight > 0) remainingHeight else 1  // 确保至少有1像素高度
 
-        // 裁切上屏内容
+        // 裁切上屏内容（需要减去间隔像素的缩放比例）
+        val gapScaleRatio = upperCropHeight.toFloat() / upperHeightWithGap
+        val gapInCropPixels = (gap * gapScaleRatio).toInt()
+        val actualUpperCropHeight = upperCropHeight - gapInCropPixels
+        
         val upperCropBitmap = cropBitmap(
             originalBitmap,
             cropStartX,
             cropStartY,
             actualCropWidth,
-            upperCropHeight
+            actualUpperCropHeight
         )
 
         // 裁切下屏内容
-        val lowerCropStartY = cropStartY + upperCropHeight + gap
+        val lowerCropStartY = cropStartY + upperCropHeight
         val lowerCropBitmap = cropBitmap(
             originalBitmap,
             cropStartX,
