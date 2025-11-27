@@ -260,6 +260,42 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        // 保存当前状态
+        outState.putString("selectedImageUri", selectedImageUri?.toString())
+        outState.putString("gapValue", editGap.text.toString())
+        outState.putBoolean("processButtonEnabled", btnProcessImage.isEnabled)
+        outState.putString("imageInfo", selectedImageInfo.text.toString())
+    }
+    
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        // 恢复状态
+        val uriString = savedInstanceState.getString("selectedImageUri")
+        val gapValue = savedInstanceState.getString("gapValue") ?: "289"
+        val processEnabled = savedInstanceState.getBoolean("processButtonEnabled")
+        val imageInfo = savedInstanceState.getString("imageInfo")
+        
+        // 恢复间隔值
+        editGap.setText(gapValue)
+        
+        // 恢复按钮状态
+        btnProcessImage.isEnabled = processEnabled
+        
+        // 恢复图片信息
+        if (imageInfo != null) {
+            selectedImageInfo.text = imageInfo
+        }
+        
+        // 恢复图片
+        uriString?.let {
+            val uri = Uri.parse(it)
+            selectedImageUri = uri
+            loadAndDisplayImage(uri)
+        }
+    }
+    
     override fun onDestroy() {
         super.onDestroy()
         // 回收选中的位图以释放内存
