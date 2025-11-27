@@ -46,16 +46,17 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                app:layout_constraintGuide_percent="0.5" />
+                app:layout_constraintGuide_percent="0.55" />
 
-            <ImageView
-                android:id="@+id/imagePreview"
+            <com.adam.thorwallpapertool.CropPreviewView
+                android:id="@+id/cropPreviewView"
                 android:layout_width="0dp"
-                android:layout_height="150dp"
+                android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
                 android:layout_marginTop="16dp"
                 android:layout_marginEnd="8dp"
-                android:scaleType="centerCrop"
+                android:minHeight="150dp"
+                android:maxHeight="250dp"
                 android:background="#f0f0f0"
                 android:contentDescription="@string/image_preview_content_description"
                 app:layout_constraintEnd_toStartOf="@id/guideline_vertical"
