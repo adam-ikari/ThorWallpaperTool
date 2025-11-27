@@ -16,12 +16,11 @@ import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : AppCompatActivity() {
     
-    private lateinit var imagePreview: ImageView
+    private lateinit var cropPreviewView: CropPreviewView
     private lateinit var btnSelectImage: Button
     private lateinit var btnProcessImage: Button
     private lateinit var selectedImageInfo: TextView
     private lateinit var editGap: EditText
-    private lateinit var checkPPICompensation: CheckBox
     private lateinit var progressBar: ProgressBar
     
     private var selectedImageUri: Uri? = null
@@ -52,7 +51,7 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun initViews() {
-        imagePreview = findViewById(R.id.imagePreview)
+        cropPreviewView = findViewById(R.id.cropPreviewView)
         btnSelectImage = findViewById(R.id.btnSelectImage)
         btnProcessImage = findViewById(R.id.btnProcessImage)
         selectedImageInfo = findViewById(R.id.selectedImageInfo)
@@ -67,6 +66,11 @@ class MainActivity : AppCompatActivity() {
         
         btnProcessImage.setOnClickListener {
             processImage()
+        }
+        
+        // 监听间隔输入变化，实时更新预览
+        editGap.setOnTextChanged { text, _, _, _ ->
+            updateCropPreview()
         }
     }
     
@@ -99,7 +103,7 @@ class MainActivity : AppCompatActivity() {
             inputStream?.close()
             
             if (selectedBitmap != null) {
-                imagePreview.setImageBitmap(selectedBitmap)
+                cropPreviewView.setBitmap(selectedBitmap, getCurrentGap())
                 btnProcessImage.isEnabled = true
                 selectedImageInfo.text = "已选择图片: ${selectedBitmap?.width}x${selectedBitmap?.height}"
             }
@@ -128,17 +132,27 @@ class MainActivity : AppCompatActivity() {
         return inSampleSize
     }
     
+    private fun getCurrentGap(): Int {
+        val gapInput = editGap.text.toString().trim()
+        return if (gapInput.isEmpty()) 0 else {
+            try {
+                gapInput.toInt()
+            } catch (e: NumberFormatException) {
+                0 // 如果输入无效，默认为0
+            }
+        }
+    }
+    
+    private fun updateCropPreview() {
+        selectedBitmap?.let { bitmap ->
+            cropPreviewView.setBitmap(bitmap, getCurrentGap())
+        }
+    }
+    
     private fun processImage() {
         selectedBitmap?.let { bitmap ->
             // 获取用户输入的间隔值
-            val gapInput = editGap.text.toString().trim()
-            val gap = if (gapInput.isEmpty()) 0 else {
-                try {
-                    gapInput.toInt()
-                } catch (e: NumberFormatException) {
-                    0 // 如果输入无效，默认为0
-                }
-            }
+            val gap = getCurrentGap()
             
             // 显示进度条
             progressBar.visibility = View.VISIBLE
