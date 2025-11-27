@@ -77,6 +77,10 @@ class CropPreviewView @JvmOverloads constructor(
                 bitmapLeft = (viewWidth - scaledBitmapWidth) / 2f
                 bitmapTop = (viewHeight - scaledBitmapHeight) / 2f
                 
+                // 确保居中位置不为负数
+                bitmapLeft = maxOf(0f, bitmapLeft)
+                bitmapTop = maxOf(0f, bitmapTop)
+                
                 // 创建缩放后的位图
                 val matrix = Matrix().apply {
                     postScale(bitmapScale, bitmapScale)
@@ -85,6 +89,12 @@ class CropPreviewView @JvmOverloads constructor(
                 
                 calculateCropAreas()
             }
+        } ?: run {
+            // 没有图片时，清空相关变量
+            scaledBitmap = null
+            upperCropRect = RectF()
+            lowerCropRect = RectF()
+            gapRect = RectF()
         }
     }
     
@@ -227,18 +237,38 @@ class CropPreviewView @JvmOverloads constructor(
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
         
+        val width = MeasureSpec.getSize(widthMeasureSpec) - paddingLeft - paddingRight
+        val height = MeasureSpec.getSize(heightMeasureSpec) - paddingTop - paddingBottom
+        
         originalBitmap?.let { bitmap ->
-            val width = MeasureSpec.getSize(widthMeasureSpec) - paddingLeft - paddingRight
-            
-            if (width > 0) {
-                // 计算适合宽度的缩放比例
-                val scale = width.toFloat() / bitmap.width
-                val scaledHeight = (bitmap.height * scale).toInt()
+            if (width > 0 && height > 0) {
+                // 检查高度是否为固定值（横屏模式）
+                val isFixedHeight = MeasureSpec.getMode(heightMeasureSpec) == MeasureSpec.EXACTLY
                 
-                // 确保高度不小于最小值
-                val finalHeight = maxOf(scaledHeight, 200)
-                
-                setMeasuredDimension(width + paddingLeft + paddingRight, finalHeight + paddingTop + paddingBottom)
+                if (isFixedHeight) {
+                    // 横屏模式：使用固定高度，让图片适应这个高度
+                    val scale = height.toFloat() / bitmap.height
+                    val scaledWidth = (bitmap.width * scale).toInt()
+                    
+                    // 确保宽度不超过可用空间
+                    val finalWidth = minOf(scaledWidth, width)
+                    
+                    setMeasuredDimension(finalWidth + paddingLeft + paddingRight, height + paddingTop + paddingBottom)
+                } else {
+                    // 竖屏模式：根据宽度计算高度
+                    val scale = width.toFloat() / bitmap.width
+                    val scaledHeight = (bitmap.height * scale).toInt()
+                    
+                    // 确保高度不小于最小值
+                    val finalHeight = maxOf(scaledHeight, 200)
+                    
+                    setMeasuredDimension(width + paddingLeft + paddingRight, finalHeight + paddingTop + paddingBottom)
+                }
+            }
+        } ?: run {
+            // 没有图片时，使用指定的尺寸
+            if (width > 0 && height > 0) {
+                setMeasuredDimension(width + paddingLeft + paddingRight, height + paddingTop + paddingBottom)
             }
         }
     }
@@ -246,8 +276,8 @@ class CropPreviewView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         
-        // 绘制背景
-        canvas.drawColor(Color.parseColor("#f5f5f5"))
+        // 绘制背景（使用透明背景，让布局文件中的背景色生效）
+        canvas.drawColor(Color.TRANSPARENT)
         
         // 绘制缩放后的图片
         scaledBitmap?.let { bitmap ->
